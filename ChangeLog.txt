@@ -2,7 +2,7 @@
 v0.4.0:
 
     * New clone of original project; keeps only the SHLock class and
-		  its dependencies.
+      its dependencies.
 
 v0.3.1:
 
