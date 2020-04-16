@@ -1,9 +1,5 @@
-
-from threading import *
-# noinspection PyUnresolvedReferences,PyProtectedMember
-from threading import _Condition, _RLock, _allocate_lock, _get_ident
-from time import sleep as _sleep
-from time import time as _time
+import threading
+import time
 
 __all__ = ["Condition", "Lock", "RLock", "SHLock"]
 
@@ -28,8 +24,9 @@ class Lock(_ContextManagerMixin):
     to Lock.acquire().
     """
 
+    # noinspection PyUnresolvedReferences,PyProtectedMember
     def __init__(self):
-        self.__lock = _allocate_lock()
+        self._lock = threading._allocate_lock()
         super(Lock, self).__init__()
 
     def acquire(self, blocking=True, timeout=None):
@@ -45,68 +42,74 @@ class Lock(_ContextManagerMixin):
         acquired and False otherwise.
         """
         if timeout is None:
-            return self.__lock.acquire(blocking)
+            return self._lock.acquire(blocking)
         else:
             # Simulated timeout using progressively longer sleeps.
             # This is the same timeout scheme used in the stdlib Condition
             # class.  If there's lots of contention on the lock then there's
             # a good chance you won't get it; but then again, Python doesn't
             # guarantee fairness anyway.
-            end_time = _time() + timeout
+            end_time = time.time() + timeout
             delay = 0.0005
-            while not self.__lock.acquire(False):
-                remaining = end_time - _time()
+            while not self._lock.acquire(False):
+                remaining = end_time - time.time()
                 if remaining <= 0:
                     return False
                 delay = min(delay * 2, remaining, 0.05)
-                _sleep(delay)
+                time.sleep(delay)
             return True
 
     def release(self):
         """Release this lock."""
-        self.__lock.release()
+        self._lock.release()
 
 
-class RLock(_ContextManagerMixin, _RLock):
+# noinspection PyProtectedMember
+class RLock(_ContextManagerMixin, threading._RLock):
     """Re-implemented RLock object.
 
     This is pretty much a direct clone of the RLock object from the standard
     threading module; the only difference is that it uses a custom Lock class
     so that acquire() has a "timeout" parameter.
+
+    NOTE(ankan): So why the inheritance from _RLock at all?  That is because Condition
+    (see below) uses *this* RLock, while inheriting from threading.Condition, and the
+    latter needs the *other* methods in _RLock like _acquire_restore() and _release_save(),
+    which are not overridden here.
     """
 
     _LockClass = Lock
 
     def __init__(self):
         super(RLock, self).__init__()
-        self.__block = self._LockClass()
-        self.__owner = None
-        self.__count = 0
+        self._block = self._LockClass()
+        self._owner = None
+        self._count = 0
 
     def acquire(self, blocking=True, timeout=None):
-        me = _get_ident()
-        if self.__owner == me:
-            self.__count += 1
+        me = threading.get_ident()
+        if self._owner == me:
+            self._count += 1
             return True
-        if self.__block.acquire(blocking, timeout):
-            self.__owner = me
-            self.__count = 1
+        if self._block.acquire(blocking, timeout):
+            self._owner = me
+            self._count = 1
             return True
         return False
 
     def release(self):
-        if self.__owner != _get_ident():
+        if self._owner != threading.get_ident():
             raise RuntimeError("cannot release un-acquired lock")
-        self.__count -= 1
-        if not self.__count:
-            self.__owner = None
-            self.__block.release()
+        self._count -= 1
+        if not self._count:
+            self._owner = None
+            self._block.release()
 
     def _is_owned(self):
-        return self.__owner == _get_ident()
+        return self._owner == threading.get_ident()
 
 
-class Condition(_Condition):
+class Condition(threading.Condition):
     """Re-implemented Condition class.
 
     This is pretty much a direct clone of the Condition class from the standard
@@ -124,17 +127,23 @@ class Condition(_Condition):
 
     # This is essentially the same as the base version, but it returns
     # True if the wait was successful and False if it timed out.
+    #
+    # NOTE(ankan): This is not strictly necessary in Py 3.8+, since there,
+    # threading.Condition.wait() already returns the above values under the same
+    # conditions.  However, we continue to use this re-implementation, since we
+    # are using our custom classes for _LockClass and _WaiterLockClass.
+    # noinspection PyUnresolvedReferences
     def wait(self, timeout=None):
         if not self._is_owned():
             raise RuntimeError("cannot wait on un-acquired lock")
         waiter = self._WaiterLockClass()
         waiter.acquire()
-        self.__waiters.append(waiter)
+        self._waiters.append(waiter)
         saved_state = self._release_save()
         try:
             if not waiter.acquire(timeout=timeout):
                 try:
-                    self.__waiters.remove(waiter)
+                    self._waiters.remove(waiter)
                 except ValueError:
                     pass
                 return False
@@ -212,7 +221,7 @@ class SHLock(_ContextManagerMixin):
         # This decrements the appropriate lock counters, and if the lock
         # becomes free, it looks for a queued thread to hand it off to.
         # By doing the hand-off here we ensure fairness.
-        me = currentThread()
+        me = threading.currentThread()
         with self._lock:
             if self.is_exclusive:
                 if self._exclusive_owner is not me:
@@ -256,7 +265,7 @@ class SHLock(_ContextManagerMixin):
                 raise RuntimeError("release() called on un-acquired lock")
 
     def _acquire_shared(self, blocking=True, timeout=None):
-        me = currentThread()
+        me = threading.currentThread()
         # Each case: acquiring a lock we already hold.
         if self.is_shared and me in self._shared_owners:
             self.is_shared += 1
@@ -283,7 +292,7 @@ class SHLock(_ContextManagerMixin):
             self._shared_owners[me] = 1
 
     def _acquire_exclusive(self, blocking=True, timeout=None):
-        me = currentThread()
+        me = threading.currentThread()
         # Each case: acquiring a lock we already hold.
         if self._exclusive_owner is me:
             assert self.is_exclusive

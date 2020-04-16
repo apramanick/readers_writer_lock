@@ -20,11 +20,13 @@ The following API niceties are also included:
     * all exposed objects are actual classes and can be safely subclassed
 
 """
-
-from __future__ import with_statement
+import sys
+_MIN_PYTHON = (3, 8)
+if sys.version_info < _MIN_PYTHON:
+    sys.exit("Python {}.{} or later is required.".format(_MIN_PYTHON[0], _MIN_PYTHON[1]))
 
 __ver_major__ = 0
-__ver_minor__ = 4
+__ver_minor__ = 5
 __ver_patch__ = 0
 __ver_sub__ = ""
 __version__ = "{0}.{1}.{2}{3}".format(__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)

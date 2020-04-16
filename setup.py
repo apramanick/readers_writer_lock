@@ -14,6 +14,7 @@ LICENSE = "MIT"
 KEYWORDS = "thread threading lock mutex read-write"
 
 setup(name=NAME,
+      python_requires='>=3.8',
       version=VERSION,
       author=AUTHOR,
       author_email=AUTHOR_EMAIL,
