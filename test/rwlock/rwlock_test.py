@@ -65,18 +65,17 @@ class _TestThread(threading.Thread):
 class RWLockTest(unittest.TestCase):
     """Unit tests for the rwlock module.
 
-    Note that currently we don't really have comprehensive unit tests for SHLock; we just have
-    a simple single test that traces the execution of several competing threads.
+    Note that currently we don't really have comprehensive unit tests for rwlock;
+    we just have a single, simple test that traces the execution of several competing
+    threads when SHLock is used in both modes.
     """
 
     def test_simple(self):
-
         r1 = _TestThread(_TYPE_READER, 1, "Reader 1", 25, 0.1)
         r2 = _TestThread(_TYPE_READER, 2, "Reader 2", 15, 0.15)
         r3 = _TestThread(_TYPE_READER, 3, "Reader 3", 4, 0.5)
         w1 = _TestThread(_TYPE_WRITER, 4, "Writer 1", 5, 0.05)
         w2 = _TestThread(_TYPE_WRITER, 5, "Writer 2", 7, 0.3)
-
         all_threads = [r1, r2, r3, w1, w2]
         for t in all_threads:
             t.start()
