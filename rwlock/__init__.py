@@ -23,19 +23,12 @@ The following API niceties are also included:
 
 from __future__ import with_statement
 
-
 __ver_major__ = 0
 __ver_minor__ = 4
 __ver_patch__ = 0
 __ver_sub__ = ""
-__version__ = "{0}.{1}.{2}{3}".format(__ver_major__, __ver_minor__,
-                                      __ver_patch__, __ver_sub__)
-
-import sys
-import weakref
+__version__ = "{0}.{1}.{2}{3}".format(__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 
 from rwlock.rw_lock import *
 
-
 __all__ = ["Condition", "Lock", "RLock", "SHLock"]
-

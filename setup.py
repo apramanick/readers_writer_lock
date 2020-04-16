@@ -1,7 +1,7 @@
-
 from distutils.core import setup
 
 import rwlock
+
 VERSION = rwlock.__version__
 
 NAME = "rwlock"
@@ -23,5 +23,4 @@ setup(name=NAME,
       license=LICENSE,
       keywords=KEYWORDS,
       packages=["rwlock"]
-     )
-
+      )
