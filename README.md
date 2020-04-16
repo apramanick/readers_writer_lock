@@ -10,6 +10,13 @@ This project keeps only the `SHLock` class (and its essential helper classes and
 from the original `threading2` package.  The only modifications I have made is to port this code
 to Python 3.8.
 
+Caveats
+=======
+- Note that `SHLock.acquire()` does _not_ work like other lock classes in `threading`
+  when the `blocking` parameter is set to `False` (and the `shared` parameter is `True`);
+  in fact, it is rather useless to set the `blocking` parameter to `False`, since it is not
+  possible to determine whether the lock was acquired or not in that case.
+
 Support Considerations
 ======================
 Currently, I have no plans to support this long-term, since this is a temporary measure to
