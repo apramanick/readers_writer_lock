@@ -47,6 +47,8 @@ def _parse_command_line():
     # list and the help string:
     def formatter(prog): return argparse.ArgumentDefaultsHelpFormatter(prog,
                                                                        max_help_position=36)
+
+    # noinspection PyTypeChecker
     parser = argparse.ArgumentParser(
         formatter_class=formatter,  # The above-defined formatter
         description="Runs unit tests for rwlock.")
